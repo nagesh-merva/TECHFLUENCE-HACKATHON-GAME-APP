@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TechFluence 2025 - Retro Futurism Challenge</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Orbitron:wght@400;700&display=swap"
+        rel="stylesheet">
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1>TechFluence 2025</h1>
+            <h2>Retro Futurism Challenge</h2>
+            <div class="theme-tagline">Connecting Past and Future</div>
+        </header>
+
+        <div class="game-container">
+            <div class="phase phase-1" id="phase1">
+                <h3>Phase 1: Find Your Match</h3>
+                <p>Select your team name and enter the code you received from the other set of teams.</p>
+
+                <form id="codeForm">
+                    <div class="form-group">
+                        <label for="team_name">Your Team Name:</label>
+                        <select id="team_name" name="team_name" required>
+                            <option value="">Select your team</option>
+                            <!-- Team options will be populated dynamically -->
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="code">Enter Code:</label>
+                        <input type="text" id="code" name="code" required>
+                    </div>
+
+                    <button type="submit" class="submit-btn">Submit Code</button>
+                </form>
+
+                <div id="phase1Response" class="response-message"></div>
+            </div>
+
+            <div class="phase phase-2 hidden" id="phase2">
+                <h3>Phase 2: Final Submission</h3>
+                <p>Enter the token you received from your matched team.</p>
+
+                <div class="matched-team" id="matchedTeam"></div>
+
+                <form id="tokenForm">
+                    <div class="form-group">
+                        <label for="token_code">Enter Token:</label>
+                        <input type="text" id="token_code" name="token_code" required>
+                    </div>
+
+                    <button type="submit" class="submit-btn">Submit Token</button>
+                </form>
+
+                <div id="phase2Response" class="response-message"></div>
+            </div>
+
+            <div class="phase phase-complete hidden" id="phaseComplete">
+                <h3>Challenge Complete!</h3>
+                <div class="completion-message" id="completionMessage"></div>
+                <div class="points-display" id="pointsDisplay"></div>
+            </div>
+        </div>
+
+        <footer>
+            <p>TechFluence 2025 © All Rights Reserved</p>
+        </footer>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const codeForm = document.getElementById('codeForm');
+            const tokenForm = document.getElementById('tokenForm');
+            const phase1 = document.getElementById('phase1');
+            const phase2 = document.getElementById('phase2');
+            const phaseComplete = document.getElementById('phaseComplete');
+            const phase1Response = document.getElementById('phase1Response');
+            const phase2Response = document.getElementById('phase2Response');
+            const matchedTeam = document.getElementById('matchedTeam');
+            const completionMessage = document.getElementById('completionMessage');
+            const pointsDisplay = document.getElementById('pointsDisplay');
+            const teamSelect = document.getElementById('team_name');
+
+            // Fetch team names when page loads
+            fetchTeamNames();
+
+            function fetchTeamNames() {
+                fetch('/get-teams')
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            // Populate the dropdown with team names
+                            const teams = data.teams;
+                            teams.sort(); // Sort alphabetically
+
+                            teams.forEach(team => {
+                                const option = document.createElement('option');
+                                option.value = team;
+                                option.textContent = team;
+                                teamSelect.appendChild(option);
+                            });
+                        } else {
+                            console.error('Failed to fetch team names');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error fetching team names:', error);
+                    });
+            }
+
+            // Handle code submission
+            codeForm.addEventListener('submit', function (e) {
+                e.preventDefault();
+
+                const formData = new FormData(codeForm);
+
+                fetch('/submit-code', {
+                    method: 'POST',
+                    body: formData
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            phase1Response.innerHTML = data.message;
+                            phase1Response.className = 'response-message success';
+
+                            // Show matched team name
+                            matchedTeam.innerHTML = `<span>Your matched team: </span>${data.matched_team}`;
+
+                            // Show Phase 2
+                            setTimeout(() => {
+                                phase1.classList.add('slide-out');
+                                setTimeout(() => {
+                                    phase1.classList.add('hidden');
+                                    phase2.classList.remove('hidden');
+                                    phase2.classList.add('slide-in');
+                                }, 500);
+                            }, 1500);
+                        } else {
+                            phase1Response.innerHTML = data.message;
+                            phase1Response.className = 'response-message error';
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        phase1Response.innerHTML = 'An error occurred. Please try again.';
+                        phase1Response.className = 'response-message error';
+                    });
+            });
+
+            // Handle token submission
+            tokenForm.addEventListener('submit', function (e) {
+                e.preventDefault();
+
+                const formData = new FormData(tokenForm);
+
+                fetch('/submit-token', {
+                    method: 'POST',
+                    body: formData
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            phase2Response.innerHTML = data.message;
+                            phase2Response.className = 'response-message success';
+
+                            // Show completion screen
+                            setTimeout(() => {
+                                phase2.classList.add('slide-out');
+                                setTimeout(() => {
+                                    phase2.classList.add('hidden');
+                                    phaseComplete.classList.remove('hidden');
+                                    phaseComplete.classList.add('slide-in');
+
+                                    completionMessage.innerHTML = 'You have successfully completed the Retro Futurism Challenge!';
+                                    pointsDisplay.innerHTML = `<span>Points earned: </span>${data.points}`;
+                                }, 500);
+                            }, 1500);
+                        } else {
+                            phase2Response.innerHTML = data.message;
+                            phase2Response.className = 'response-message error';
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        phase2Response.innerHTML = 'An error occurred. Please try again.';
+                        phase2Response.className = 'response-message error';
+                    });
+            });
+        });
+    </script>
+</body>
+
+</html>
